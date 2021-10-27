@@ -13,6 +13,7 @@ from torchvision import datasets, transforms
 from tqdm import tqdm
 import seaborn as sns
 
+from cnn import CNN
 from mlp import MLP
 
 
@@ -27,8 +28,9 @@ def load_data(data_dir="./data"):
     return trainset, testset
 
 
-def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
-    net = MLP(config["l1"], config["l2"], config["dr"])
+def train(config, checkpoint_dir=None, data_dir=None, num_epochs=200):
+    #net = MLP(config["l1"], config["l2"], config["dr"])
+    net = CNN()
     accuracy_stats = {
         'train': [],
         "val": []
@@ -63,11 +65,11 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
     trainloader = torch.utils.data.DataLoader(
         train_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True, num_workers=8)
+        shuffle=True, num_workers=4)
     valloader = torch.utils.data.DataLoader(
         val_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True, num_workers=8)
+        shuffle=True, num_workers=4)
 
     for epoch in tqdm(range(1, num_epochs+1)):
         train_epoch_loss = 0
@@ -129,17 +131,16 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
 
     print("Finished Training")
 
-    return accuracy_stats, loss_stats
+    return accuracy_stats, loss_stats, net
 
 
 def test_accuracy(net, device="cpu"):
     trainset, testset = load_data()
 
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=4, shuffle=False, num_workers=2)
+        testset, batch_size=4, shuffle=False)
 
-    correct = 0
-    total = 0
+    val_epoch_acc = 0
 
     net.eval()
     with torch.no_grad():
@@ -147,26 +148,29 @@ def test_accuracy(net, device="cpu"):
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+            ps = torch.exp(outputs)
+            top_p, top_class = ps.topk(1, dim=1)
 
-    return correct / total
+            equals = top_class == labels.view(*top_class.shape)
+            val_epoch_acc += torch.mean(equals.type(torch.FloatTensor))
+
+    return val_epoch_acc.item() / len(testloader)
 
 
 if __name__ == "__main__":
     # You can change the number of GPUs per trial here:
     # main(num_samples=10, max_num_epochs=200, gpus_per_trial=0)
+    gpus_per_trial = 2
     data_dir = os.path.abspath("./data")
     config = {
         "l1": 128,
         "l2": 128,
-        "lr": 0.0005,  # Learning Rate
+        "lr": 0.001,  # Learning Rate
         "batch_size": 64,  # Batch Size
         "dr": 0.3,  # Dropout
         # "momentum": tune.uniform(0.1, 0.9)
     }
-    accuracy_stats, loss_stats = train(config, data_dir=data_dir)
+    accuracy_stats, loss_stats, model = train(config, data_dir=data_dir)
 
     train_val_acc_df = pd.DataFrame.from_dict(accuracy_stats).reset_index().melt(id_vars=['index']).rename(
         columns={"index": "epochs"})
@@ -178,4 +182,15 @@ if __name__ == "__main__":
         'Train-Val Accuracy/Epoch')
     sns.lineplot(data=train_val_loss_df, x="epochs", y="value", hue="variable", ax=axes[1]).set_title(
         'Train-Val Loss/Epoch')
-    plt.show()
+    #plt.show()
+    plt.savefig("./mlp-accuracy.png")
+
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        if gpus_per_trial > 1:
+            model = nn.DataParallel(model)
+    model.to(device)
+
+    test_acc = test_accuracy(model, device)
+    print("Best trial test set accuracy: {}".format(test_acc))
