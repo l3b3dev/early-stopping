@@ -28,7 +28,7 @@ def load_data(data_dir="./data"):
     return trainset, testset
 
 
-def train(config, checkpoint_dir=None, data_dir=None, num_epochs=10):
+def train(config, checkpoint_dir=None, data_dir=None, num_epochs=200):
     #net = MLP(config["l1"], config["l2"], config["dr"])
     net = CNN()
     accuracy_stats = {
