@@ -63,11 +63,11 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
     trainloader = torch.utils.data.DataLoader(
         train_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True)
+        shuffle=True, num_workers=8)
     valloader = torch.utils.data.DataLoader(
         val_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True)
+        shuffle=True, num_workers=8)
 
     for epoch in tqdm(range(1, num_epochs+1)):
         train_epoch_loss = 0
