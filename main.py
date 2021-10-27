@@ -162,7 +162,7 @@ def test_accuracy(net, device="cpu"):
 if __name__ == "__main__":
     # You can change the number of GPUs per trial here:
     # main(num_samples=10, max_num_epochs=200, gpus_per_trial=0)
-    gpus_per_trial = 0
+    gpus_per_trial = 2
     data_dir = os.path.abspath("./data")
     config = {
         "l1": 128,
