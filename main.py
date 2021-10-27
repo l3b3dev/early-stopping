@@ -172,12 +172,12 @@ if __name__ == "__main__":
         "dr": 0.3,  # Dropout
         # "momentum": tune.uniform(0.1, 0.9)
     }
-    accuracy_stats, loss_stats = train(config, data_dir=data_dir)
-
-    train_val_acc_df = pd.DataFrame.from_dict(accuracy_stats).reset_index().melt(id_vars=['index']).rename(
-        columns={"index": "epochs"})
-    train_val_loss_df = pd.DataFrame.from_dict(loss_stats).reset_index().melt(id_vars=['index']).rename(
-        columns={"index": "epochs"})
+    # accuracy_stats, loss_stats = train(config, data_dir=data_dir)
+    #
+    # train_val_acc_df = pd.DataFrame.from_dict(accuracy_stats).reset_index().melt(id_vars=['index']).rename(
+    #     columns={"index": "epochs"})
+    # train_val_loss_df = pd.DataFrame.from_dict(loss_stats).reset_index().melt(id_vars=['index']).rename(
+    #     columns={"index": "epochs"})
     # Plot the dataframes
     # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 7))
     # sns.lineplot(data=train_val_acc_df, x="epochs", y="value", hue="variable", ax=axes[0]).set_title(
