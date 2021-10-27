@@ -28,9 +28,9 @@ def load_data(data_dir="./data"):
     return trainset, testset
 
 
-def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
-    #net = MLP(config["l1"], config["l2"], config["dr"])
-    net = CNN()
+def train(config, checkpoint_dir=None, data_dir=None, num_epochs=50):
+    net = MLP(config["l1"], config["l2"], config["dr"])
+    #net = CNN()
     accuracy_stats = {
         'train': [],
         "val": []
@@ -129,7 +129,7 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=100):
         #
         # tune.report(loss=(val_loss / val_steps), accuracy=correct / total)
 
-    torch.save(net.state_dict(), 'mdl.pth')
+    torch.save(net.state_dict(), 'mlp_model.pth')
 
     print("Finished Training")
 
@@ -179,15 +179,15 @@ if __name__ == "__main__":
     train_val_loss_df = pd.DataFrame.from_dict(loss_stats).reset_index().melt(id_vars=['index']).rename(
         columns={"index": "epochs"})
     # Plot the dataframes
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 7))
-    sns.lineplot(data=train_val_acc_df, x="epochs", y="value", hue="variable", ax=axes[0]).set_title(
-        'Train-Val Accuracy/Epoch')
-    sns.lineplot(data=train_val_loss_df, x="epochs", y="value", hue="variable", ax=axes[1]).set_title(
-        'Train-Val Loss/Epoch')
+    # fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 7))
+    # sns.lineplot(data=train_val_acc_df, x="epochs", y="value", hue="variable", ax=axes[0]).set_title(
+    #     'Train-Val Accuracy/Epoch')
+    # sns.lineplot(data=train_val_loss_df, x="epochs", y="value", hue="variable", ax=axes[1]).set_title(
+    #     'Train-Val Loss/Epoch')
     #plt.show()
-    plt.savefig("./mlp-accuracy.png")
+    #plt.savefig("./mlp-accuracy.png")
 
-    model = CNN()
+    model = MLP()
 
     device = "cpu"
     if torch.cuda.is_available():
@@ -196,7 +196,7 @@ if __name__ == "__main__":
             model = nn.DataParallel(model)
     model.to(device)
 
-    model.load_state_dict(torch.load('mdl.pth'))
+    model.load_state_dict(torch.load('mlp_model.pth'))
 
     test_acc = test_accuracy(model, device)
     print("Best trial test set accuracy: {}".format(test_acc))
