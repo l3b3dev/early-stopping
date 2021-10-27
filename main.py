@@ -187,7 +187,7 @@ if __name__ == "__main__":
     #plt.show()
     #plt.savefig("./mlp-accuracy.png")
 
-    model = MLP()
+    model = MLP(config["l1"], config["l2"], config["dr"])
 
     device = "cpu"
     if torch.cuda.is_available():
