@@ -28,7 +28,7 @@ def load_data(data_dir="./data"):
     return trainset, testset
 
 
-def train(config, checkpoint_dir=None, data_dir=None, num_epochs=200):
+def train(config, checkpoint_dir=None, data_dir=None, num_epochs=10):
     #net = MLP(config["l1"], config["l2"], config["dr"])
     net = CNN()
     accuracy_stats = {
@@ -65,11 +65,11 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=200):
     trainloader = torch.utils.data.DataLoader(
         train_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True, num_workers=4)
+        shuffle=True, num_workers=8)
     valloader = torch.utils.data.DataLoader(
         val_subset,
         batch_size=int(config["batch_size"]),
-        shuffle=True, num_workers=4)
+        shuffle=True, num_workers=8)
 
     for epoch in tqdm(range(1, num_epochs+1)):
         train_epoch_loss = 0
@@ -129,9 +129,11 @@ def train(config, checkpoint_dir=None, data_dir=None, num_epochs=200):
         #
         # tune.report(loss=(val_loss / val_steps), accuracy=correct / total)
 
+    torch.save(net.state_dict(), 'mdl.pth')
+
     print("Finished Training")
 
-    return accuracy_stats, loss_stats, net
+    return accuracy_stats, loss_stats
 
 
 def test_accuracy(net, device="cpu"):
@@ -160,7 +162,7 @@ def test_accuracy(net, device="cpu"):
 if __name__ == "__main__":
     # You can change the number of GPUs per trial here:
     # main(num_samples=10, max_num_epochs=200, gpus_per_trial=0)
-    gpus_per_trial = 2
+    gpus_per_trial = 0
     data_dir = os.path.abspath("./data")
     config = {
         "l1": 128,
@@ -170,7 +172,7 @@ if __name__ == "__main__":
         "dr": 0.3,  # Dropout
         # "momentum": tune.uniform(0.1, 0.9)
     }
-    accuracy_stats, loss_stats, model = train(config, data_dir=data_dir)
+    accuracy_stats, loss_stats = train(config, data_dir=data_dir)
 
     train_val_acc_df = pd.DataFrame.from_dict(accuracy_stats).reset_index().melt(id_vars=['index']).rename(
         columns={"index": "epochs"})
@@ -185,12 +187,16 @@ if __name__ == "__main__":
     #plt.show()
     plt.savefig("./mlp-accuracy.png")
 
+    model = CNN()
+
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda:0"
         if gpus_per_trial > 1:
             model = nn.DataParallel(model)
     model.to(device)
+
+    model.load_state_dict(torch.load('mdl.pth'))
 
     test_acc = test_accuracy(model, device)
     print("Best trial test set accuracy: {}".format(test_acc))
